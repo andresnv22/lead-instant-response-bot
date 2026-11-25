@@ -1,6 +1,8 @@
 # Lead Instant Response Bot (Web → Respuesta Inmediata → Excel/CRM)
 
-Bot en Python (FastAPI) pensado para **agencias de marketing, inmobiliarias y negocios que pautan en Meta/Google Ads**. Recibe un lead desde un formulario web, lo califica con IA en segundos, le envía respuesta inmediata y lo guarda en Excel (`.xlsx`).
+Bot en Python (FastAPI) pensado para **agencias de marketing, inmobiliarias y negocios que pautan en Meta/Google Ads**. Recibe un lead desde un formulario web, lo califica, prepara una respuesta y lo guarda en Excel (`.xlsx`).
+
+Por defecto `DEMO_MODE=true`: la respuesta por email se simula. Para enviarla de verdad, configura `DEMO_MODE=false`, `SMTP_USER` y `SMTP_PASS`. Si falta la configuración o SMTP falla, la petición devuelve error; no informa falsamente que el correo salió. El endpoint recibe leads enviados a él, pero no está conectado automáticamente con Meta/Google Ads.
 
 ## Instalación rápida
 ```bash

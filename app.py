@@ -1,5 +1,6 @@
 import os
 import smtplib
+import ssl
 from datetime import datetime
 from email.message import EmailMessage
 from pathlib import Path
@@ -29,6 +30,11 @@ class LeadPayload(BaseModel):
     message: str
 
 
+def safe_excel_text(value: str) -> str:
+    """Prevent untrusted form values from becoming spreadsheet formulas."""
+    return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value
+
+
 def qualify_lead(lead: LeadPayload) -> dict:
     """Califica el lead (ALTO / MEDIO / BAJO) y redacta respuesta inmediata."""
     if DEMO_MODE or not os.getenv("OPENAI_API_KEY"):
@@ -42,7 +48,7 @@ def qualify_lead(lead: LeadPayload) -> dict:
 
         reply = (
             f"¡Hola {lead.name}! Gracias por escribirnos desde {lead.source}. "
-            "Recibimos tu solicitud y un asesor te contactará en menos de 5 minutos. "
+            "Recibimos tu solicitud y un asesor te contactará pronto. "
             "¿Cuál es el mejor horario para llamarte?"
         )
         return {"score": score, "instant_reply": reply}
@@ -78,12 +84,12 @@ def save_lead_to_excel(lead: LeadPayload, score: str) -> str:
 
     ws.append([
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        lead.name,
-        lead.email,
-        lead.phone,
-        lead.source,
+        safe_excel_text(lead.name),
+        safe_excel_text(lead.email),
+        safe_excel_text(lead.phone),
+        safe_excel_text(lead.source),
         score,
-        lead.message,
+        safe_excel_text(lead.message),
     ])
     wb.save(EXCEL_PATH)
     return str(EXCEL_PATH)
@@ -91,8 +97,10 @@ def save_lead_to_excel(lead: LeadPayload, score: str) -> str:
 
 def send_instant_email(to_email: str, subject: str, body: str) -> str:
     """Envía correo inmediato al lead (o simula en DEMO_MODE)."""
-    if DEMO_MODE or not os.getenv("SMTP_USER") or not os.getenv("SMTP_PASS"):
+    if DEMO_MODE:
         return "simulated_in_demo_mode"
+    if not os.getenv("SMTP_USER") or not os.getenv("SMTP_PASS"):
+        raise RuntimeError("SMTP_USER and SMTP_PASS are required when DEMO_MODE=false")
 
     msg = EmailMessage()
     msg["Subject"] = subject
@@ -100,8 +108,8 @@ def send_instant_email(to_email: str, subject: str, body: str) -> str:
     msg["To"] = to_email
     msg.set_content(body)
 
-    with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587"))) as server:
-        server.starttls()
+    with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587")), timeout=15) as server:
+        server.starttls(context=ssl.create_default_context())
         server.login(os.getenv("SMTP_USER", ""), os.getenv("SMTP_PASS", ""))
         server.send_message(msg)
     return "sent"
