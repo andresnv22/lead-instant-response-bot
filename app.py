@@ -4,6 +4,7 @@ import logging
 import os
 import sqlite3
 import smtplib
+import ssl
 import threading
 from datetime import UTC, datetime
 from email.message import EmailMessage
@@ -160,7 +161,7 @@ def send_instant_email(to_email: str, subject: str, body: str, settings: dict) -
 
     try:
         with smtplib.SMTP(settings["smtp_host"], settings["smtp_port"], timeout=15) as server:
-            server.starttls()
+            server.starttls(context=ssl.create_default_context())
             server.login(settings["smtp_user"], settings["smtp_pass"])
             server.send_message(msg)
         return "sent"
