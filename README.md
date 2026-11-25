@@ -1,20 +1,21 @@
-# Lead Instant Response Bot (Web → Respuesta Inmediata → Excel/CRM)
+# Lead Instant Response Bot
 
-Bot en Python (FastAPI) pensado para **agencias de marketing, inmobiliarias y negocios que pautan en Meta/Google Ads**. Recibe un lead desde un formulario web, lo califica con IA en segundos, le envía respuesta inmediata y lo guarda en Excel (`.xlsx`).
+Servicio webhook en Python (FastAPI) para **agencias de marketing, inmobiliarias y negocios con formularios web / Meta Ads**. Recibe cada lead, valida su correo, evita duplicados con SQLite, lo califica con OpenAI, envía respuesta inmediata por correo SMTP y exporta de forma segura a Excel (`.xlsx`).
 
-## Instalación rápida
+## Características de confiabilidad
+- **Autenticación por header `X-Webhook-Secret`** para bloquear envíos no autorizados.
+- **Deduplicación en SQLite** por `(email, source)`: reintentos de formularios no envían correos repetidos al cliente ni duplican filas.
+- **Fallback ante fallos de IA/SMTP**: nunca pierde un lead si OpenAI o el servidor SMTP fallan temporalmente.
+- **Escritura Excel thread-safe y sanitizada** contra *Excel formula injection*.
+
+## Instalación y uso
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync
 cp .env.example .env
-uvicorn app:app --reload --port 8001
+uv run uvicorn app:app --reload --port 8001
 ```
 
-## Probar en modo demo
+## Pruebas automatizadas
 ```bash
-curl -X POST http://127.0.0.1:8001/webhook/lead \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Carlos Ruiz", "email": "carlos@empresa.com", "phone": "+573009998877", "source": "Meta Ads", "message": "Hola, quiero cotizar urgente una página web"}'
+uv run pytest
 ```
-Esto responderá con el `score` (`ALTO`), el mensaje de respuesta inmediata y creará/actualizará `leads_calificados.xlsx`.
