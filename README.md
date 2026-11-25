@@ -2,6 +2,8 @@
 
 Bot en Python (FastAPI) pensado para **agencias de marketing, inmobiliarias y negocios que pautan en Meta/Google Ads**. Recibe un lead desde un formulario web, lo califica con IA en segundos, le envía respuesta inmediata y lo guarda en Excel (`.xlsx`).
 
+El endpoint recibe leads enviados a él; no está conectado automáticamente a Meta/Google Ads. Necesita credenciales OpenAI y SMTP reales. Un fallo de SMTP termina la petición en error y debe investigarse antes de reintentar, pues el lead ya quedó guardado en Excel.
+
 ## Instalación rápida
 ```bash
 python -m venv .venv

@@ -1,6 +1,7 @@
 import json
 import os
 import smtplib
+import ssl
 from datetime import datetime
 from email.message import EmailMessage
 from pathlib import Path
@@ -28,6 +29,10 @@ class LeadPayload(BaseModel):
     phone: str
     source: str = "web_form"
     message: str
+
+
+def safe_excel_text(value: str) -> str:
+    return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value
 
 
 def qualify_lead(lead: LeadPayload) -> dict:
@@ -72,12 +77,12 @@ def save_lead_to_excel(lead: LeadPayload, score: str) -> str:
 
     ws.append([
         datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        lead.name,
-        lead.email,
-        lead.phone,
-        lead.source,
+        safe_excel_text(lead.name),
+        safe_excel_text(lead.email),
+        safe_excel_text(lead.phone),
+        safe_excel_text(lead.source),
         score,
-        lead.message,
+        safe_excel_text(lead.message),
     ])
     wb.save(EXCEL_PATH)
     return str(EXCEL_PATH)
@@ -96,8 +101,8 @@ def send_instant_email(to_email: str, subject: str, body: str) -> str:
     msg["To"] = to_email
     msg.set_content(body)
 
-    with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587"))) as server:
-        server.starttls()
+    with smtplib.SMTP(os.getenv("SMTP_HOST", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", "587")), timeout=15) as server:
+        server.starttls(context=ssl.create_default_context())
         server.login(smtp_user, smtp_pass)
         server.send_message(msg)
     return "sent"
